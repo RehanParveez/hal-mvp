@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'apps.notifications',
     'apps.community',
     'apps.credit',
+    'apps.assistant',
     'django_celery_beat',
 ]
 
@@ -63,6 +64,7 @@ NUMBERDAR_APPROVAL_TIMEOUT_DAYS = int(os.environ.get('NUMBERDAR_APPROVAL_TIMEOUT
 PARTNER_BANK_API_URL = os.environ.get('PARTNER_BANK_API_URL', 'MOCK')
 PARTNER_BANK_API_KEY = os.environ.get('PARTNER_BANK_API_KEY', '')
 PARTNER_BANK_PLATFORM_ID = os.environ.get('PARTNER_BANK_PLATFORM_ID', 'HAL_MVP_23')
+USE_MOCK_AI = os.getenv('USE_MOCK_AI', 'false').lower() == 'true'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -166,7 +168,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
     'DEFAULT_THROTTLE_CLASSES': ['rest_framework.throttling.ScopedRateThrottle'],
-    'DEFAULT_THROTTLE_RATES': {'credit_check': '5/hour', 'numberdar_action': '30/min', 'otp_verify': '10/hour'}, 
+    'DEFAULT_THROTTLE_RATES': {'credit_check': '5/hour', 'numberdar_action': '30/min', 'otp_verify': '10/hour', 'ai_assistant': '20/hour'}, 
 }
 
 SIMPLE_JWT = {

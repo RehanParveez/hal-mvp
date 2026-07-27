@@ -34,4 +34,5 @@ urlpatterns = [
     path('notifications/', include('apps.notifications.urls')),
     path('community/', include('apps.community.urls')),
     path('credit/', include('apps.credit.urls')),
+    path('assistant/', include('apps.assistant.urls')),
 ]

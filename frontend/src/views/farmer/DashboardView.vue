@@ -11,6 +11,10 @@
       </template>
     </DashboardHero>
 
+    <DashboardSection tone="white" eyebrow="Support" title="">
+      <AskHalWidget />
+    </DashboardSection>
+
     <div class="content-container -mt-8 relative z-20">
       <QuickActionsBar :actions="quickActions" />
     </div>
@@ -78,6 +82,7 @@ import RequestAgreementForm from '@/components/farmer/RequestAgreementForm.vue'
 import FileClaimModal from '@/components/farmer/FileClaimModal.vue'
 import CommunityVerificationCard from '@/components/farmer/CommunityVerificationCard.vue'
 import CreditCheckSection from '@/components/farmer/CreditCheckSection.vue'
+import AskHalWidget from '@/components/farmer/AskHalWidget.vue'
 
 const { t } = useI18n()
 const showClaimModal = ref(false)

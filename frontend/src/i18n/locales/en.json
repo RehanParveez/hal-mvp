@@ -256,5 +256,19 @@
     "communityRegion": "Community Region", "communityPortal": "Community Verification Portal", "communityEyebrow": "Community",
     "farmerVerificationQueue": "Farmer Verification Queue",
     "districtLabel": "District", "assignedArea": "Assigned Area", "qaVerificationQueue": "Verification Queue"
-  }
+  },
+
+  "assistant": {
+  "title": "Ask Hal",
+  "disclaimer": "Hal can explain your status, but cannot approve, verify, or change anything.",
+  "emptyState": "Ask a question about your loan, escrow, or verification status.",
+  "thinking": "Thinking...",
+  "inputPlaceholder": "Type your question...",
+  "send": "Send",
+  "suggestVerification": "Why do I need Numberdar verification?",
+  "suggestCreditCheck": "What is a credit check and why do I need one?",
+  "suggestEscrow": "What can I spend my escrow money on right now?",
+  "suggestGeneral": "How does Hal work?"
+ }
+ 
 }
