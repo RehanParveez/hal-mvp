@@ -1,10 +1,10 @@
 from rest_framework import viewsets, status
-from apps.loans.serializers.detail import LoanApplicationSerializer, LoanApplicationSerializer1
+from apps.loans.serializers.detail import LoanApplicationSerializer, LoanApplicationSerializer1, ReadinessChecklistItemSerializer
 from shared.permissions import FarmerPermission, BankManagerPerm
 from rest_framework.permissions import IsAuthenticated
 from apps.loans.models import LoanApplication
 from rest_framework.exceptions import PermissionDenied
-from apps.loans.services import LoanApplicationService
+from apps.loans.services import LoanApplicationService, LoanReadinessService
 from rest_framework.response import Response
 from apps.loans.serializers.basic import LoanApprovalSerializer, LoanRejectionSerializer
 from rest_framework.decorators import action
@@ -109,3 +109,8 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
    return Response({'message': f"Loan disbursed. Escrow funded with PKR {escrow.remaining_balance}.",
     'loan_id': str(loan.id), 'loan_status': loan.status, 'disbursed_at': loan.disbursed_at, 'escrow_id': str(escrow.id),
     'escrow_balance': str(escrow.remaining_balance), 'insurance_premium_deducted': str(escrow.insurance_premium_deducted)}) 
+   
+  @action(detail=False, methods=['get'], permission_classes=[FarmerPermission])
+  def readiness(self, request):
+    checklist = LoanReadinessService.get_readiness_checklist(request.user.farmer_profile)
+    return Response(ReadinessChecklistItemSerializer(checklist, many=True).data)

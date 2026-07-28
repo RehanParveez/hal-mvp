@@ -4,12 +4,13 @@ from shared.exceptions import ExternalServiceUnavailable
 import requests
 from django.conf import settings
 from apps.assistant.models import AssistantQuery
- 
+from apps.loans.models import LoanApplication
+  
 logger = logging.getLogger(__name__)
  
 ai_assistant_breaker = CircuitBreaker('ai_assistant', failure_threshold=3, cooldown_seconds=120)
  
-SYSTEM_PROMPT_TEMPLATE = """You are "Ask Hal," a read-only explanation assistant inside the Hal agricultural platform.
+SYSTEM_PROMPT_TEMPLATES = {'farmer': """You are "Ask Hal," a read-only explanation assistant inside the Hal agricultural platform.
  
 How Hal works, in general (use this to answer general questions):
 Hal replaces informal Arthi lending. A farmer is verified by a local Numberdar,
@@ -31,7 +32,27 @@ Rules you must always follow:
  
 This farmer's current data:
 {context_json}
-"""
+""",
+
+   'bank': """You are "Ask Hal" for a bank manager reviewing loan applications on the Hal platform.
+Rules you must always follow:
+- Only use the specific loan data given to you below. Never invent a number or status not present in it.
+- If no specific loan is referenced, answer only general questions about how Hal's process works.
+- You cannot approve, reject, or disburse any loan — you only explain what the platform's own gates and data currently show. If asked to make or override a lending decision, say plainly that's the bank manager's own judgment call, not something you can decide.
+- Respond in {language_name}, in a direct, professional tone — no need to simplify financial terminology for this audience.
+
+Loan context: {context_json}""",
+
+  'factory': """You are "Ask Hal" for a factory buyer reviewing deliveries and settlements on the Hal platform.
+Rules you must always follow:
+- Only use the specific delivery/settlement data given to you below. Never invent a number or status not present in it.
+- You must NEVER suggest, recommend, or influence what quality grade to assign to a delivery, or what deduction percentage to apply. If asked anything about grading decisions, say plainly that grading is the factory's own judgment call and you cannot advise on it — this applies even if the question is indirect or hypothetical.
+- You can only explain status, contract terms, and figures that already exist in the data below.
+- Respond in {language_name}.
+
+Delivery/settlement context: {context_json}""",
+
+}
 
 class AssistantService:
   @staticmethod
@@ -66,7 +87,68 @@ class AssistantService:
         context['current_phase_allowed_categories'] = active_unlock.milestone.allowed_input_categories
  
     return context
- 
+   
+  @staticmethod
+  def _gather_bank_context(user, loan_id):
+    from apps.loans.models import LoanApplication
+    context = {'full_name': user.full_name, 'role': 'bank_manager'}
+    if not loan_id:
+      context['note'] = 'No specific loan referenced — general questions only.'
+      return context
+
+    loan = LoanApplication.objects.select_related('farmer__user', 'credit_check').filter(
+      id=loan_id, bank=user.bank_profile).first()
+    if not loan:
+      context['note'] = 'Referenced loan not found or not assigned to your bank.'
+      return context
+    context.update({
+      'farmer_name': loan.farmer.user.full_name, 
+      'farmer_district': loan.farmer.user.district,
+      'loan_status': loan.status,
+      'requested_amount': str(loan.requested_amount),
+      'approved_amount': str(loan.approved_amount) if loan.approved_amount else None,
+      'credit_check_status': loan.credit_check_status,
+      'numberdar_verified': loan.farmer.user.numberdar_verified,
+    })
+    if loan.credit_check:
+      context['credit_risk_tier'] = loan.credit_check.risk_tier
+      context['credit_is_eligible'] = loan.credit_check.is_eligible
+    return context
+
+  @staticmethod
+  def _gather_factory_context(user, batch_id): 
+    from apps.delivery.models import BatchDelivery
+    context = {'full_name': user.full_name, 'role': 'factory_buyer'}
+    if not batch_id:
+      context['note'] = 'No specific delivery referenced — general questions only.'
+      return context
+    batch = BatchDelivery.objects.select_related('allocation__contract').filter(
+      id=batch_id, allocation__contract__factory=user.factory_profile).first()
+    if not batch:
+      context['note'] = 'Referenced delivery not found or not assigned to your contracts.'
+      return context
+    context.update({
+      'batch_kg': str(batch.batch_kg), 'batch_status': batch.status,
+      'expected_payout': str(batch.expected_payout),
+      'actual_payout': str(batch.actual_payout) if batch.actual_payout else None,
+      'grade_received': batch.grade_received or None,
+      'payment_defer_days': batch.allocation.contract.payment_defer_days,
+    })
+    invoice = getattr(batch, 'invoice', None)
+    if invoice:
+      context['settlement_status'] = invoice.status
+    return context
+
+  @staticmethod
+  def _gather_context(user, loan_id=None, batch_id=None):
+    if user.role in ('smallholder', 'tenant'):
+      return AssistantService._gather_farmer_context(user)
+    if user.role == 'bank':
+      return AssistantService._gather_bank_context(user, loan_id)
+    if user.role == 'factory':
+      return AssistantService._gather_factory_context(user, batch_id)
+    return {'full_name': user.full_name, 'role': user.role}
+  
   @staticmethod
   def _mock_answer(question, context, language_name):
     q = question.lower()
@@ -103,11 +185,12 @@ class AssistantService:
             "I can only explain — I can't approve or change anything. [Mock]")
  
   @staticmethod
-  def ask(user, question):
-    context = AssistantService._gather_context(user)
+  def ask(user, question, loan_id=None, batch_id=None):
+    context = AssistantService._gather_context(user, loan_id=loan_id, batch_id=batch_id)
     language_name = 'Urdu' if user.preferred_language == 'ur' else 'English'
-    system_prompt = SYSTEM_PROMPT_TEMPLATE.format(language_name=language_name, context_json=context)
- 
+    template_key = 'bank' if user.role == 'bank' else 'factory' if user.role == 'factory' else 'farmer'
+    system_prompt = SYSTEM_PROMPT_TEMPLATES[template_key].format(language_name=language_name, context_json=context)
+    
     def _call_llm():
       if settings.USE_MOCK_AI or not settings.ANTHROPIC_API_KEY:
         if any(k in question.lower() for k in ('simulate error', 'test fallback')):
@@ -143,6 +226,10 @@ class AssistantService:
         ("میں ابھی جواب نہیں دے سکتا — چند منٹ بعد دوبارہ کوشش کریں، "
          "یا اپنے نمبردار یا بینک منیجر سے رابطہ کریں۔")
       call_status = 'failed'
+    
+    related_loan = None  
+    if user.role == 'bank' and loan_id:
+      related_loan = LoanApplication.objects.filter(id=loan_id, bank=user.bank_profile).first()
  
-    return AssistantQuery.objects.create(user=user, question=question, answer=answer,
-      context_snapshot=context, status=call_status)
+    return AssistantQuery.objects.create(user=user, question=question, answer=answer, language=user.preferred_language,
+      context_snapshot=context, status=call_status, role_at_time=user.role, related_loan=related_loan)

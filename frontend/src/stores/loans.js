@@ -11,6 +11,7 @@ export const useLoansStore = defineStore('loans', {
     districtFilter: '',
     myLoans: [],
     error: null,
+    readinessChecklist: []
   }),
 
   getters: {
@@ -133,6 +134,12 @@ export const useLoansStore = defineStore('loans', {
       } finally {
         this.isLoading = false
       }
+    },
+
+    async fetchReadiness() {
+      const res = await loansApi.getLoanReadiness()
+      this.readinessChecklist = res.data
+      return this.readinessChecklist
     },
   },
 })

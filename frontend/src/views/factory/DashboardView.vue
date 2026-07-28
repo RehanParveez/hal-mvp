@@ -19,6 +19,7 @@
           <div>
             <p class="font-semibold">{{ $t('factory.batchLabel') }} #{{ batch.id.slice(0, 8) }}</p>
              <p class="text-sm text-gray-500">{{ batch.batch_kg }} kg — {{ $t('factory.expectedPayout') }}: PKR {{ batch.expected_payout }}</p>
+             <AskHalInline :batch-id="batch.id" />
           </div>
           <StatusBadge :status="batch.status" />
         </div>
@@ -76,6 +77,7 @@ import DashboardSection from '@/components/layout/DashboardSection.vue'
 import QuickActionsBar from '@/components/shared/QuickActionsBar.vue'
 import { useScrollTo } from '@/composables/useScrollTo.js'
 import { useI18n } from 'vue-i18n'
+import AskHalInline from '@/components/shared/AskHalInline.vue'
 
 const { t } = useI18n()
 const delivery = useDeliveryStore()

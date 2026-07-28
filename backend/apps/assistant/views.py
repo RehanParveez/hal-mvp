@@ -1,6 +1,6 @@
 from rest_framework import viewsets, status
 from apps.assistant.serializers import AssistantQuerySerializer, AskQuestionSerializer
-from shared.permissions import FarmerPermission
+from shared.permissions import FarmerPermission, BankManagerPerm, FactoryPerm
 from rest_framework.throttling import ScopedRateThrottle
 from apps.assistant.models import AssistantQuery
 from rest_framework.decorators import action
@@ -9,7 +9,9 @@ from rest_framework.response import Response
 
 class AssistantQueryViewSet(viewsets.ReadOnlyModelViewSet):
   serializer_class = AssistantQuerySerializer
-  permission_classes = [FarmerPermission]
+
+  def get_permissions(self):  
+    return [(FarmerPermission | BankManagerPerm | FactoryPerm)()]
 
   def get_throttles(self):
     if self.action == 'ask':
@@ -24,5 +26,6 @@ class AssistantQueryViewSet(viewsets.ReadOnlyModelViewSet):
   def ask(self, request):
     serializer = AskQuestionSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-    query = AssistantService.ask(user=request.user, question=serializer.validated_data['question'])
+    query = AssistantService.ask(user=request.user, question=serializer.validated_data['question'],
+      loan_id=serializer.validated_data.get('loan_id'), batch_id=serializer.validated_data.get('batch_id'))
     return Response(AssistantQuerySerializer(query).data, status=status.HTTP_201_CREATED)

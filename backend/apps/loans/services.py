@@ -77,3 +77,72 @@ class LoanApplicationService:
        'insurance_premium': escrow.insurance_premium_deducted},
         reference_id=loan.id))
       return loan, escrow
+    
+REASON_TEXT = {
+  'numberdar_verified':   {'en': 'Verified by your Numberdar.', 'ur': 'آپ کے نمبردار نے تصدیق کر دی ہے۔'},
+  'numberdar_unverified': {'en': 'Your local Numberdar has not verified your account yet.', 'ur': 'آپ کے مقامی نمبردار نے ابھی تک آپ کے اکاؤنٹ کی تصدیق نہیں کی۔'},
+  'no_loan':              {'en': "You haven't applied for a loan yet.", 'ur': 'آپ نے ابھی تک قرض کے لیے درخواست نہیں دی۔'},
+  'bank_approved':        {'en': 'Approved by {bank}.', 'ur': '{bank} نے منظور کر دیا ہے۔'},
+  'bank_pending':         {'en': 'Your bank is still reviewing your application.', 'ur': 'آپ کا بینک ابھی آپ کی درخواست کا جائزہ لے رہا ہے۔'},
+  'bank_other':           {'en': 'Your application status is: {status}.', 'ur': 'آپ کی درخواست کی حالت: {status}۔'},
+  'credit_not_run':       {'en': 'Your credit check has not started yet.', 'ur': 'آپ کا کریڈٹ چیک ابھی شروع نہیں ہوا۔'},
+  'credit_pending':       {'en': 'Your credit check is being processed.', 'ur': 'آپ کا کریڈٹ چیک جاری ہے۔'},
+  'credit_approved':      {'en': 'Your credit check was approved.', 'ur': 'آپ کا کریڈٹ چیک منظور ہو گیا۔'},
+  'credit_rejected':      {'en': 'Your credit check did not pass.', 'ur': 'آپ کا کریڈٹ چیک منظور نہیں ہوا۔'},
+  'credit_manual':        {'en': 'Your credit check needs manual review by our team.', 'ur': 'آپ کے کریڈٹ چیک کو ہماری ٹیم کے دستی جائزے کی ضرورت ہے۔'},
+  'disbursed':            {'en': 'Your loan has been disbursed into escrow.', 'ur': 'آپ کا قرض ایسکرو میں جاری کر دیا گیا ہے۔'},
+  'not_disbursed':        {'en': 'Waiting on the steps above before your bank can disburse.', 'ur': 'بینک کے قرض جاری کرنے سے پہلے اوپر دیے گئے مراحل کا انتظار ہے۔'},
+}
+LABEL_TEXT = {
+  'numberdar_verification': {'en': 'Community Verification', 'ur': 'کمیونٹی تصدیق'},
+  'loan_application':       {'en': 'Loan Application', 'ur': 'قرض کی درخواست'},
+  'bank_approval':          {'en': 'Bank Approval', 'ur': 'بینک کی منظوری'},
+  'credit_check':           {'en': 'Credit Check', 'ur': 'کریڈٹ چیک'},
+  'disbursement':           {'en': 'Loan Disbursement', 'ur': 'قرض کا اجراء'},
+}
+
+def _t(bank, key, lang, **kwargs):
+  text = bank[key].get(lang, bank[key]['en'])
+  return text.format(**kwargs) if kwargs else text
+
+class LoanReadinessService:
+  @staticmethod
+  def get_readiness_checklist(farmer_profile):
+    user = farmer_profile.user
+    lang = user.preferred_language
+    checklist = []
+
+    checklist.append({
+      'key': 'numberdar_verification', 'label': _t(LABEL_TEXT, 'numberdar_verification', lang),
+      'status': 'complete' if user.numberdar_verified else 'incomplete',
+      'reason': _t(REASON_TEXT, 'numberdar_verified' if user.numberdar_verified else 'numberdar_unverified', lang),
+      'action_route': '#community-section',
+    })
+
+    loan = farmer_profile.loan_applications.select_related('bank').order_by('-created_at').first()
+    if not loan:
+      checklist.append({
+        'key': 'loan_application', 'label': _t(LABEL_TEXT, 'loan_application', lang), 'status': 'incomplete',
+          'reason': _t(REASON_TEXT, 'no_loan', lang), 'action_route': '#loan-section'})
+      return checklist
+
+    bank_approved = loan.status in ('bank_approved', 'disbursed', 'repaid')
+    bank_status = 'complete' if bank_approved else ('incomplete' if loan.status == 'submitted' else 'blocked')
+    bank_reason = (_t(REASON_TEXT, 'bank_approved', lang, bank=loan.bank.institution_name) if bank_approved
+      else _t(REASON_TEXT, 'bank_pending', lang) if loan.status == 'submitted'
+      else _t(REASON_TEXT, 'bank_other', lang, status=loan.status))
+    checklist.append({'key': 'bank_approval', 'label': _t(LABEL_TEXT, 'bank_approval', lang),
+      'status': bank_status, 'reason': bank_reason, 'action_route': None})
+
+    credit_key = {'not_run': 'credit_not_run', 'pending': 'credit_pending', 'approved': 'credit_approved',
+      'rejected': 'credit_rejected', 'manual_review': 'credit_manual'}.get(loan.credit_check_status, 'credit_not_run')
+    checklist.append({'key': 'credit_check', 'label': _t(LABEL_TEXT, 'credit_check', lang),
+      'status': 'complete' if loan.credit_check_status == 'approved' else 'incomplete',
+      'reason': _t(REASON_TEXT, credit_key, lang), 'action_route': '#credit-section'})
+
+    checklist.append({'key': 'disbursement', 'label': _t(LABEL_TEXT, 'disbursement', lang),
+      'status': 'complete' if loan.status == 'disbursed' else 'incomplete',
+      'reason': _t(REASON_TEXT, 'disbursed' if loan.status == 'disbursed' else 'not_disbursed', lang),
+      'action_route': '#escrow-section'})
+
+    return checklist

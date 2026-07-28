@@ -49,6 +49,7 @@
         <CreditCheckPanel :credit-check="loanCreditCheck" class="mt-2" />
       </div>
     </div>
+    <AskHalInline :loan-id="loan.id" />
   </div>
 
 </template>
@@ -61,6 +62,7 @@ import { useNotificationsStore } from '@/stores/notifications.js'
 import CreditTierBadge from '@/components/shared/CreditTierBadge.vue'
 import CreditCheckPanel from '@/views/bank/CreditCheckPanel.vue'
 import { useCreditStore } from '@/stores/credit.js'
+import AskHalInline from '@/components/shared/AskHalInline.vue'
 
 const credit = useCreditStore()   
 const showCreditPanel = ref(false)  

@@ -11,7 +11,8 @@
       </template>
     </DashboardHero>
 
-    <DashboardSection tone="white" eyebrow="Support" title="">
+    <DashboardSection id="assistant-section" tone="white" eyebrow="Guidance" :title="$t('readiness.sectionTitle')">
+      <LoanReadinessChecklist />
       <AskHalWidget />
     </DashboardSection>
 
@@ -83,6 +84,7 @@ import FileClaimModal from '@/components/farmer/FileClaimModal.vue'
 import CommunityVerificationCard from '@/components/farmer/CommunityVerificationCard.vue'
 import CreditCheckSection from '@/components/farmer/CreditCheckSection.vue'
 import AskHalWidget from '@/components/farmer/AskHalWidget.vue'
+import LoanReadinessChecklist from '@/components/farmer/LoanReadinessChecklist.vue'
 
 const { t } = useI18n()
 const showClaimModal = ref(false)

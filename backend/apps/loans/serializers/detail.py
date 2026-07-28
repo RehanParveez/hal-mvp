@@ -78,3 +78,10 @@ class LoanApplicationSerializer1(serializers.ModelSerializer):
       'farmer_province', 'farmer_owned_acres', 'bank_name', 'crop_name', 'crop_code', 'crop_season',
       'tenant_agreement_type', 'tenant_agreement_acres', 'tenant_parcel_ref', 'landowner_name', 'landowner_approved', 'escrow_id', 'farmer_credit_tier',
        'numberdar_verified_at_application', 'credit_check_status']
+    
+class ReadinessChecklistItemSerializer(serializers.Serializer):
+  key = serializers.CharField()
+  label = serializers.CharField()
+  status = serializers.CharField()
+  reason = serializers.CharField()
+  action_route = serializers.CharField(allow_null=True)

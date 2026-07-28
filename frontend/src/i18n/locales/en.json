@@ -269,6 +269,11 @@
   "suggestCreditCheck": "What is a credit check and why do I need one?",
   "suggestEscrow": "What can I spend my escrow money on right now?",
   "suggestGeneral": "How does Hal work?"
+ },
+
+ "readiness": {
+  "title": "Loan Readiness",
+  "sectionTitle": "Your Loan Readiness & Ask Hal",
+  "askHal": "Ask Hal →"
  }
- 
 }

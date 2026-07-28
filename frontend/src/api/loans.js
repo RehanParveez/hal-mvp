@@ -23,3 +23,7 @@ export function rejectLoan(id, payload) {
 export function disburseLoan(id) {
   return apiClient.post(`/loans/applications/${id}/disburse/`)
 }
+
+export function getLoanReadiness() { 
+  return apiClient.get('/loans/applications/readiness/')
+}
