@@ -275,5 +275,10 @@
   "title": "Loan Readiness",
   "sectionTitle": "Your Loan Readiness & Ask Hal",
   "askHal": "Ask Hal →"
+ },
+
+ "seasonSummary": {
+  "generateBtn": "Generate My Season Summary",
+  "title": "Your Season, Summarized"
  }
 }

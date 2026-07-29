@@ -101,8 +101,8 @@ LABEL_TEXT = {
   'disbursement':           {'en': 'Loan Disbursement', 'ur': 'قرض کا اجراء'},
 }
 
-def _t(bank, key, lang, **kwargs):
-  text = bank[key].get(lang, bank[key]['en'])
+def _t(mapping, key, lang, **kwargs):
+  text = mapping[key].get(lang, mapping[key]['en'])
   return text.format(**kwargs) if kwargs else text
 
 class LoanReadinessService:
@@ -128,7 +128,7 @@ class LoanReadinessService:
 
     bank_approved = loan.status in ('bank_approved', 'disbursed', 'repaid')
     bank_status = 'complete' if bank_approved else ('incomplete' if loan.status == 'submitted' else 'blocked')
-    bank_reason = (_t(REASON_TEXT, 'bank_approved', lang, bank=loan.bank.institution_name) if bank_approved
+    bank_reason = (_t(REASON_TEXT, 'bank_approved', lang=lang, bank=loan.bank.institution_name) if bank_approved
       else _t(REASON_TEXT, 'bank_pending', lang) if loan.status == 'submitted'
       else _t(REASON_TEXT, 'bank_other', lang, status=loan.status))
     checklist.append({'key': 'bank_approval', 'label': _t(LABEL_TEXT, 'bank_approval', lang),

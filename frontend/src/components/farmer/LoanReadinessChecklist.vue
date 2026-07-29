@@ -1,6 +1,6 @@
 <template>
   <div class="card mb-4">
-    <p class="text-sm font-semibold text-gray-700 mb-3">{{ $t('readiness.title') }}</p>
+    <p class="text-sm font-display font-semibold text-gray-700 mb-3">{{ $t('readiness.title') }}</p>
     <div class="space-y-1">
       <div v-for="item in loans.readinessChecklist" :key="item.key"
         class="flex items-start gap-3 py-2 border-b border-gray-50 last:border-0">

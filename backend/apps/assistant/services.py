@@ -5,6 +5,9 @@ import requests
 from django.conf import settings
 from apps.assistant.models import AssistantQuery
 from apps.loans.models import LoanApplication
+from django.db.models import Sum
+from apps.assistant.llm_client import call_claude
+from apps.delivery.models import BatchDelivery
   
 logger = logging.getLogger(__name__)
  
@@ -114,10 +117,42 @@ class AssistantService:
       context['credit_risk_tier'] = loan.credit_check.risk_tier
       context['credit_is_eligible'] = loan.credit_check.is_eligible
     return context
+  
+  @staticmethod
+  def _mock_answer(question, context, language_name):
+    q = question.lower()
+    if language_name == 'Urdu':
+      if any(k in q for k in ('numberdar', 'verif')):
+        return ("نمبردار کی تصدیق آپ کی شناخت اور زمین کی معلومات کی تصدیق کرتی ہے، "
+                "قرض کی درخواست آگے بڑھنے سے پہلے۔ یہ آپ کا مقامی نمبردار مکمل کرتا ہے۔ [Mock]")
+      if 'credit' in q:
+        return ("کریڈٹ چیک بینک کو یہ اندازہ لگانے میں مدد دیتا ہے کہ آپ قرض کیسے واپس کریں گے۔ "
+                "یہ خودکار ہے اور اس کی کوئی فیس نہیں۔ [Mock]")
+      if 'escrow' in q:
+        phase = context.get('current_phase_name')
+        if phase:
+          return (f"آپ کا پیسہ ایسکرو میں ہے، اس وقت '{phase}' مرحلے کے لیے کھلا ہے، "
+                  "صرف رجسٹرڈ دکانداروں سے خرچ ہو سکتا ہے۔ [Mock]")
+        return "آپ کا ایسکرو بیلنس صرف رجسٹرڈ دکانداروں سے، اجازت شدہ اشیاء پر خرچ ہو سکتا ہے۔ [Mock]"
+      return ("ہل آپ کے قرض، ایسکرو، یا تصدیق کی حالت کی وضاحت کر سکتا ہے۔ "
+              "میں صرف وضاحت کر سکتا ہوں، منظور یا تبدیل نہیں کر سکتا۔ [Mock]")
+    if any(k in q for k in ('numberdar', 'verif')):
+      return ("Numberdar verification confirms your identity and land details before your loan "
+              "application can move forward. Your local Numberdar completes this step. [Mock]")
+    if 'credit' in q:
+      return ("A credit check helps the bank assess how you'll repay the loan. It's automatic "
+              "and there's no fee charged to you for it. [Mock]")
+    if 'escrow' in q:
+      phase = context.get('current_phase_name')
+      if phase:
+        return (f"Your money is held in escrow and is currently unlocked for the '{phase}' phase — "
+                f"spendable only with registered shopkeepers on items allowed in this phase. [Mock]")
+      return "Your escrow balance can only be spent with registered shopkeepers, on approved items. [Mock]"
+    return ("Hal can explain your loan, escrow, or verification status. "
+            "I can only explain — I can't approve or change anything. [Mock]")
 
   @staticmethod
   def _gather_factory_context(user, batch_id): 
-    from apps.delivery.models import BatchDelivery
     context = {'full_name': user.full_name, 'role': 'factory_buyer'}
     if not batch_id:
       context['note'] = 'No specific delivery referenced — general questions only.'
@@ -190,46 +225,102 @@ class AssistantService:
     language_name = 'Urdu' if user.preferred_language == 'ur' else 'English'
     template_key = 'bank' if user.role == 'bank' else 'factory' if user.role == 'factory' else 'farmer'
     system_prompt = SYSTEM_PROMPT_TEMPLATES[template_key].format(language_name=language_name, context_json=context)
-    
-    def _call_llm():
-      if settings.USE_MOCK_AI or not settings.ANTHROPIC_API_KEY:
-        if any(k in question.lower() for k in ('simulate error', 'test fallback')):
-          raise ExternalServiceUnavailable(service_name = 'AI Assistant')
-        return AssistantService._mock_answer(question, context, language_name)
- 
-      try:
-        response = requests.post(
-          "https://api.anthropic.com/v1/messages",
-          headers={
-            "x-api-key": settings.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json",
-          },
-          json={
-            "model": "claude-haiku-4-5-20251001", "max_tokens": 400, "system": system_prompt,
-             "messages": [{"role": "user", "content": question}],
-          },
-          timeout=20,
-        )
-      except requests.exceptions.RequestException as exc:
-        raise ExternalServiceUnavailable(service_name = 'AI Assistant') from exc
- 
-      if response.status_code >= 400:
-        raise ExternalServiceUnavailable(service_name = 'AI Assistant')
-      return response.json()['content'][0]['text']
- 
+  
+    mock_fn = lambda q: AssistantService._mock_answer(q, context, language_name) 
+
     try:
-      answer = ai_assistant_breaker.call(_call_llm)
+      answer = call_claude(system_prompt, question, mock_answer_fn=mock_fn)  
       call_status = 'completed'
     except ExternalServiceUnavailable:
-      logger.warning(f"Ask Hal unavailable for user {user.id} — breaker open, simulated failure, or upstream failure.")
+      logger.warning(f"Ask Hal unavailable for user {user.id} — breaker open, mock-simulated failure, or upstream failure.")
       answer = ("I'm not able to answer right now — please try again in a few minutes, "
-         "or check with your Numberdar or bank manager.") if language_name == 'English' else \
-        ("میں ابھی جواب نہیں دے سکتا — چند منٹ بعد دوبارہ کوشش کریں، "
-         "یا اپنے نمبردار یا بینک منیجر سے رابطہ کریں۔")
+                 "or check with your Numberdar or bank manager.") if language_name == 'English' else \
+                ("میں ابھی جواب نہیں دے سکتا — چند منٹ بعد دوبارہ کوشش کریں، "
+                 "یا اپنے نمبردار یا بینک منیجر سے رابطہ کریں۔")
       call_status = 'failed'
-    
-    related_loan = None  
+
+    related_loan = None
     if user.role == 'bank' and loan_id:
+      from apps.loans.models import LoanApplication
       related_loan = LoanApplication.objects.filter(id=loan_id, bank=user.bank_profile).first()
- 
-    return AssistantQuery.objects.create(user=user, question=question, answer=answer, language=user.preferred_language,
+
+    return AssistantQuery.objects.create(
+      user=user, question=question, answer=answer, language=user.preferred_language,
       context_snapshot=context, status=call_status, role_at_time=user.role, related_loan=related_loan)
+    
+class SeasonSummaryService:
+  @staticmethod
+  def _gather_journey_context(invoice):
+    loan = invoice.loan
+    batch = invoice.batch
+    context = {
+      'crop_name': loan.crop.name, 'acres_applied_for': str(loan.acres_applied_for),
+      'requested_amount': str(loan.requested_amount), 'approved_amount': str(loan.approved_amount),
+      'credit_risk_tier': loan.credit_check.risk_tier if loan.credit_check else None,
+      'batch_kg': str(batch.batch_kg), 'grade_received': batch.grade_received,
+      'grade_deduction_pct': str(batch.grade_deduction_pct),
+      'gross_payout': str(invoice.gross_payout),
+      'principal_repaid': str(invoice.proportional_principal_deduction),
+      'interest_paid': str(invoice.bank_interest_deduction),
+      'farmer_net_profit': str(invoice.farmer_net_profit),
+      'theka_or_batai_paid': str(invoice.theka_payment or invoice.batai_landowner_share or 0),
+      'insurance_triggered': invoice.insurance_claim_triggered,
+    }
+    if hasattr(loan, 'escrow'):
+      spend_by_category = (loan.escrow.transactions.filter(txn_type='input')
+        .values('input_category').annotate(total=Sum('amount')))
+      context['input_spend_by_category'] = {row['input_category']: str(row['total']) for row in spend_by_category}
+    return context
+
+  @staticmethod
+  def _mock_narrative(context, language_name):
+    if language_name == 'Urdu':
+      return (
+        f"آپ نے {context.get('acres_applied_for')} ایکڑ پر {context.get('crop_name')} کے لیے "
+        f"PKR {context.get('approved_amount')} کا قرض لیا۔ فصل {context.get('batch_kg')} کلوگرام کٹی، "
+        f"گریڈ {context.get('grade_received')}۔ کل ادائیگی PKR {context.get('gross_payout')} تھی، "
+        f"جس میں سے PKR {context.get('principal_repaid')} اصل رقم اور PKR {context.get('interest_paid')} سود کاٹا گیا۔ "
+        f"آپ کا خالص منافع PKR {context.get('farmer_net_profit')} رہا۔ [Mock]"
+      )
+    return (
+      f"You took a loan of PKR {context.get('approved_amount')} for {context.get('acres_applied_for')} acres of "
+      f"{context.get('crop_name')}. Your harvest came in at {context.get('batch_kg')} kg, graded "
+      f"{context.get('grade_received')}. Total payout was PKR {context.get('gross_payout')}, with "
+      f"PKR {context.get('principal_repaid')} going to loan principal and PKR {context.get('interest_paid')} to interest. "
+      f"You ended the season with a net profit of PKR {context.get('farmer_net_profit')}. [Mock]"
+    )
+
+  @staticmethod
+  def generate(farmer_profile, invoice):
+    from apps.assistant.models import SeasonSummary
+    if invoice.loan.farmer_id != farmer_profile.id:
+      raise PermissionError("this settlement does not belong to you.")
+
+    existing = SeasonSummary.objects.filter(settlement_invoice=invoice).first()
+    if existing:
+      return existing
+
+    context = SeasonSummaryService._gather_journey_context(invoice)
+    user = farmer_profile.user
+    language_name = 'Urdu' if user.preferred_language == 'ur' else 'English'
+    system_prompt = (
+      "Write a short, warm, plain-language season summary for a farmer on the Hal "
+      "platform, using ONLY the real numbers below — never invent a figure. Structure "
+      "it as: what the loan was for, what was spent and on what, how the harvest "
+      f"went, and what the farmer ended up with as net profit. 4-6 short sentences. "
+      f"Respond in {language_name}.\n\nData: {context}"
+    )
+
+    mock_fn = lambda _msg: SeasonSummaryService._mock_narrative(context, language_name)   # NEW
+
+    try:
+      narrative = call_claude(system_prompt, "Write my season summary.", max_tokens=300, mock_answer_fn=mock_fn)   # CHANGED
+      call_status = 'completed'
+    except ExternalServiceUnavailable:
+      narrative = ("Your season summary isn't available right now — please try again shortly."
+        if language_name == 'English' else "آپ کے سیزن کا خلاصہ ابھی دستیاب نہیں ہے — براہ کرم تھوڑی دیر بعد کوشش کریں۔")
+      call_status = 'failed'
+
+    return SeasonSummary.objects.create(
+      settlement_invoice=invoice, farmer=farmer_profile, narrative=narrative,
+      language=user.preferred_language, context_snapshot=context, status=call_status)

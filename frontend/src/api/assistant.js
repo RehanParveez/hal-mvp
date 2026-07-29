@@ -6,3 +6,7 @@ export function askAssistant(question, extraParams = {}) {
 export function getMyQueries() {
   return apiClient.get('/assistant/queries/')
 }
+
+export function getSeasonSummary(invoiceId) {
+  return apiClient.get(`/assistant/season-summary/${invoiceId}/`)
+}

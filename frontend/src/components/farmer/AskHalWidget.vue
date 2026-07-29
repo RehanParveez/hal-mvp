@@ -1,6 +1,6 @@
 <template>
-  <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-    <div class="bg-green-900 text-white px-5 py-3 flex items-center gap-2">
+  <div class="card overflow-hidden p-0"> 
+    <div class="bg-slate-900 text-white px-5 py-3 flex items-center gap-2">
       <MessageCircle :size="18" class="text-gold-400" />
       <p class="font-display font-semibold">{{ $t('assistant.title') }}</p>
     </div>

@@ -20,6 +20,7 @@
       </button>
     </div>
     <WaterfallBreakdown v-if="settlements.currentInvoice" :invoice="settlements.currentInvoice" />
+    <SeasonSummaryCard v-if="settlements.currentInvoice" :invoice-id="settlements.currentInvoice.id" />
   </div>
 </template>
 
@@ -29,6 +30,7 @@ import { useSettlementsStore } from '@/stores/settlements.js'
 import WaterfallBreakdown from './WaterfallBreakdown.vue'
 import StatusBadge from '@/components/shared/StatusBadge.vue'
 import SkeletonCard from '@/components/shared/SkeletonCard.vue'
+import SeasonSummaryCard from './SeasonSummaryCard.vue'
 
 const settlements = useSettlementsStore()
 
