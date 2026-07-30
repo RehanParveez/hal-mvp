@@ -139,6 +139,9 @@ select:focus, input:focus, textarea:focus {
   animation: shimmer 1.4s ease-in-out infinite;
 }
 
+@keyframes ken-burns { 0% { transform: scale(1); } 100% { transform: scale(1.08); } }
+.animate-ken-burns { animation: ken-burns 20s ease-in-out infinite alternate; }
+
 @keyframes badge-pop { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
 .animate-badge-pop { animation: badge-pop 0.4s ease-out; }
 
@@ -166,7 +169,7 @@ select:focus, input:focus, textarea:focus {
 
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in-up, .animate-pulse-glow, .animate-grow-fill,
-  .animate-shake, .skeleton, .animate-badge-pop, .collapse-grid,
+  .animate-shake, .skeleton, .animate-badge-pop, .collapse-grid, .animate-ken-burns,
   .modal-enter-active, .modal-leave-active,
   .step-fade-enter-active, .step-fade-leave-active,
   .list-item-enter-active, .list-item-leave-active { animation: none !important; transition: none !important; }

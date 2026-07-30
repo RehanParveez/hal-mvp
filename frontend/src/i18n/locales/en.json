@@ -12,7 +12,9 @@
     "submitting": "Submitting...",
     "pleaseWait": "Please wait...",
     "hide": "Hide",
-    "view": "View"
+    "view": "View",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
   },
 
   "nav": {
@@ -44,7 +46,28 @@
     "shopName": "Shop Name", "secpNumber": "SECP Registration Number", "ntnNumber": "NTN Number",
     "uploadSecpCert": "SECP Certificate", "uploadIncorporation": "Incorporation Certificate",
     "submitForVerification": "Submit for Verification",
-    "pendingVerificationNote": "Your account is created — an admin will confirm your SECP/NTN details before you can transact."
+    "pendingVerificationNote": "Your account is created — an admin will confirm your SECP/NTN details before you can transact.",
+    "tagline": "Fair lending for Pakistan’s farmers.",
+    "taglineMessage2": "Every phase of the loan unlocks with the crop itself.",
+    "taglineMessage3": "Nine roles, one transparent platform.",
+    "howHalWorks": "How Hal works",
+    "stageVerified": "Verified",
+    "stageVerifiedCaption": "Confirmed by your Numberdar",
+    "stageFinanced": "Financed",
+    "stageFinancedCaption": "Bank-approved, released in phases",
+    "stageSettled": "Settled",
+    "stageSettledCaption": "Paid out automatically at harvest",
+    "locationTag": "Punjab · Pakistan",
+    "noAccountYet": "New to Hal?",
+    "registerNow": "Create an account",
+    "selectRolePlaceholder": "Select your role",
+    "register": "Register",
+    "roleLandowner": "Landowner",
+    "roleShopkeeper": "Shopkeeper",
+    "roleBank": "Bank Manager",
+    "roleFactory": "Factory Buyer",
+    "roleInsurance": "Insurance Agent",
+    "roleAfo": "AFO Officer"
   },
   "footer": {
     "tagline": "Digital escrow connecting farmers, banks, shopkeepers, and factory buyers on one transparent platform.",
