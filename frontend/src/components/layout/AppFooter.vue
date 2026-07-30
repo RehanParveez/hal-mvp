@@ -10,20 +10,6 @@
           <p class="text-sm text-slate-400 max-w-xs">{{ $t('footer.tagline') }}</p>
         </div>
 
-        <div v-if="quickLinks.length">
-          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">{{ $t('footer.quickLinks') }}</p>
-          <ul class="space-y-2 text-sm">
-            <li v-for="link in quickLinks" :key="link.labelKey">
-              <router-link v-if="link.isRoute" :to="link.target" class="hover:text-white transition-colors">
-                {{ $t(`nav.${link.labelKey}`) }}
-              </router-link>
-              <a v-else :href="link.target" class="hover:text-white transition-colors">
-                {{ $t(`nav.${link.labelKey}`) }}
-              </a>
-            </li>
-          </ul>
-        </div>
-
         <div>
           <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">{{ $t('footer.support') }}</p>
           <ul class="space-y-2 text-sm">
@@ -41,47 +27,5 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { useAuthStore } from '@/stores/auth.js'
 import { Wheat } from 'lucide-vue-next'
-
-const auth = useAuthStore()
-
-const ROLE_LINKS = {
-  smallholder: [
-    { labelKey: 'escrow', target: '#escrow-section', isRoute: false },
-    { labelKey: 'myLoans', target: '#loan-section', isRoute: false },    
-    { labelKey: 'contracts', target: '#contracts-section', isRoute: false },
-  ],
-  tenant: [
-    { labelKey: 'escrow', target: '#escrow-section', isRoute: false },
-    { labelKey: 'myLoans', target: '#loan-section', isRoute: false },   
-    { labelKey: 'contracts', target: '#contracts-section', isRoute: false },
-  ],
-  landowner: [
-    { labelKey: 'landParcels', target: '#parcels-section', isRoute: false },
-    { labelKey: 'agreements', target: '#agreements-section', isRoute: false },
-  ],
-  bank: [
-    { labelKey: 'settlements', target: '#settlements-section', isRoute: false },
-  ],
-  factory: [
-    { labelKey: 'deliveries', target: '#deliveries-section', isRoute: false },
-    { labelKey: 'settlements', target: '#settlements-section', isRoute: false },
-  ],
-  insurance: [ 
-    { labelKey: 'claims', target: '#claims-section', isRoute: false },
-    { labelKey: 'policies', target: '#policies-section', isRoute: false },
-  ],
-  afo: [ 
-    { labelKey: 'cropTypes', target: '#crop-types-section', isRoute: false },
-    { labelKey: 'spendingCaps', target: '#input-caps-section', isRoute: false },
-    { labelKey: 'milestones', target: '#milestones-section', isRoute: false },
-  ],
-  numberdar: [ 
-    { labelKey: 'verificationQueue', target: '/numberdar/queue', isRoute: true },
-  ],
-}
-
-const quickLinks = computed(() => ROLE_LINKS[auth.user?.role] || [])
 </script>

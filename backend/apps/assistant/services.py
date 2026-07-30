@@ -1,13 +1,12 @@
 import logging
 from shared.circuit_breaker import CircuitBreaker
 from shared.exceptions import ExternalServiceUnavailable
-import requests
-from django.conf import settings
 from apps.assistant.models import AssistantQuery
-from apps.loans.models import LoanApplication
 from django.db.models import Sum
 from apps.assistant.llm_client import call_claude
+from apps.loans.models import LoanApplication
 from apps.delivery.models import BatchDelivery
+from apps.assistant.models import SeasonSummary  
   
 logger = logging.getLogger(__name__)
  
@@ -59,7 +58,7 @@ Delivery/settlement context: {context_json}""",
 
 class AssistantService:
   @staticmethod
-  def _gather_context(user):
+  def _gather_farmer_context(user):
     context = {
       'full_name': user.full_name,
       'numberdar_verified': user.numberdar_verified,
@@ -93,7 +92,6 @@ class AssistantService:
    
   @staticmethod
   def _gather_bank_context(user, loan_id):
-    from apps.loans.models import LoanApplication
     context = {'full_name': user.full_name, 'role': 'bank_manager'}
     if not loan_id:
       context['note'] = 'No specific loan referenced — general questions only.'
@@ -241,11 +239,9 @@ class AssistantService:
 
     related_loan = None
     if user.role == 'bank' and loan_id:
-      from apps.loans.models import LoanApplication
       related_loan = LoanApplication.objects.filter(id=loan_id, bank=user.bank_profile).first()
 
-    return AssistantQuery.objects.create(
-      user=user, question=question, answer=answer, language=user.preferred_language,
+    return AssistantQuery.objects.create(user=user, question=question, answer=answer, language=user.preferred_language,
       context_snapshot=context, status=call_status, role_at_time=user.role, related_loan=related_loan)
     
 class SeasonSummaryService:
@@ -292,7 +288,6 @@ class SeasonSummaryService:
 
   @staticmethod
   def generate(farmer_profile, invoice):
-    from apps.assistant.models import SeasonSummary
     if invoice.loan.farmer_id != farmer_profile.id:
       raise PermissionError("this settlement does not belong to you.")
 
@@ -311,10 +306,10 @@ class SeasonSummaryService:
       f"Respond in {language_name}.\n\nData: {context}"
     )
 
-    mock_fn = lambda _msg: SeasonSummaryService._mock_narrative(context, language_name)   # NEW
+    mock_fn = lambda _msg: SeasonSummaryService._mock_narrative(context, language_name)
 
     try:
-      narrative = call_claude(system_prompt, "Write my season summary.", max_tokens=300, mock_answer_fn=mock_fn)   # CHANGED
+      narrative = call_claude(system_prompt, "Write my season summary.", max_tokens=300, mock_answer_fn=mock_fn) 
       call_status = 'completed'
     except ExternalServiceUnavailable:
       narrative = ("Your season summary isn't available right now — please try again shortly."

@@ -16,7 +16,6 @@ export const i18n = createI18n({
 export function setLocale(locale) {
   i18n.global.locale.value = locale
   localStorage.setItem(STORAGE_KEY, locale)
-  document.documentElement.setAttribute('dir', locale === 'ur' ? 'rtl' : 'ltr')
   document.documentElement.setAttribute('lang', locale)
 }
 
