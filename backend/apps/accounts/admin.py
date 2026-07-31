@@ -1,5 +1,5 @@
 from django.contrib import admin
-from apps.accounts.models import User, FarmerProfile, LandownerProfile, BankProfile, FactoryProfile, ShopkeeperProfile, InsuranceProfile
+from apps.accounts.models import User, FarmerProfile, LandownerProfile, BankProfile, FactoryProfile, ShopkeeperProfile, InsuranceProfile, CorporateVerificationDocument
 
 class FarmerProfileInline(admin.StackedInline):
   model = FarmerProfile
@@ -24,11 +24,17 @@ class ShopkeeperProfileInline(admin.StackedInline):
 class InsuranceProfileInline(admin.StackedInline):
   model = InsuranceProfile
   can_delete = False
+  
+class CorporateVerificationDocumentInline(admin.TabularInline):
+  model = CorporateVerificationDocument
+  extra = 0
+  readonly_fields = ['document_type', 'file', 'uploaded_at']
+  can_delete = False
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
   inlines = [FarmerProfileInline, LandownerProfileInline, BankProfileInline, FactoryProfileInline, ShopkeeperProfileInline,
-    InsuranceProfileInline]
+    InsuranceProfileInline, CorporateVerificationDocumentInline]
   list_display = ['id', 'phone', 'cnic', 'full_name', 'role', 'district', 'province', 'is_verified', 'is_active', 'is_staff', 'numberdar_verified', 'credit_tier', 'secp_verified', 'ntn_verified', 'created_at']
   list_editable = ['secp_verified', 'ntn_verified']
   search_fields = ['phone', 'cnic', 'full_name']

@@ -4,6 +4,11 @@ from apps.accounts.serializers import UserRegistrationSerializer, UserSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from rest_framework.parsers import MultiPartParser
+from apps.accounts.models import CorporateVerificationDocument
+from apps.accounts.serializers import DocumentUploadSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework.throttling import ScopedRateThrottle
 
 User = get_user_model()
 
@@ -63,3 +68,15 @@ class UserViewSet(viewsets.ModelViewSet):
     shopkeepers = ShopkeeperProfile.objects.select_related('user').all()
     data = [{'id': str(s.user.id), 'name': s.shop_name, 'phone': s.user.phone} for s in shopkeepers]
     return Response(data)
+  
+  @action(detail=False, methods=['post'], parser_classes=[MultiPartParser])
+  def upload_verification_document(self, request):
+    serializer = DocumentUploadSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    doc, _ = CorporateVerificationDocument.objects.update_or_create(user=request.user, document_type=serializer.validated_data['document_type'],
+      defaults={'file': serializer.validated_data['file']})
+    return Response({'message': 'Document uploaded.', 'document_type': doc.document_type}, status=status.HTTP_201_CREATED)
+  
+class ThrottledTokenObtainPairView(TokenObtainPairView):
+  throttle_classes = [ScopedRateThrottle]
+  throttle_scope = 'login'

@@ -49,3 +49,14 @@ class UserSerializer(serializers.ModelSerializer):
     model = User
     fields = ['id', 'phone', 'cnic', 'full_name', 'role', 'district', 'province', 'is_verified', 'numberdar_verified', 'credit_tier', 'secp_verified', 'ntn_verified', 'email', 'preferred_language']
     read_only_fields = ['id', 'role', 'is_verified', 'numberdar_verified', 'credit_tier', 'secp_verified', 'ntn_verified']
+    
+class DocumentUploadSerializer(serializers.Serializer):
+  document_type = serializers.ChoiceField(choices=['secp_certificate', 'incorporation_certificate'])
+  file = serializers.FileField()
+
+  def validate_file(self, value):
+    if value.size > 5 * 1024 * 1024:
+      raise serializers.ValidationError("File must be under 5MB.")
+    if value.content_type not in ('application/pdf', 'image/jpeg', 'image/png'):
+      raise serializers.ValidationError("File must be a PDF, JPEG, or PNG.")
+    return value

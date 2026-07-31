@@ -71,6 +71,17 @@ class User(AbstractBaseUser, PermissionsMixin):
       models.Index(fields=['role', 'district']),
       models.Index(fields=['role', 'numberdar_verified', 'district']),
     ]
+    
+class CorporateVerificationDocument(BaseModel):
+  DOCUMENT_TYPES = (('secp_certificate', 'SECP Certificate'), ('incorporaion_certificate', 'Incorporation Certificate'))
+  user = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name = 'verification_documents')
+  document_type = models.CharField(max_length=35, choices=DOCUMENT_TYPES)
+  file = models.FileField(upload_to='corporate_verification/%Y/%m/')
+  uploaded_at = models.DateTimeField(auto_now_add=True)
+  
+  class Meta:
+    db_table = 'corporate_verification_documents'
+    unique_together = [['user', 'document_type']]
 
 class FarmerProfile(BaseModel):
   user = models.OneToOneField(User, on_delete=models.CASCADE, related_name = 'farmer_profile')

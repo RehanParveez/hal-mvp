@@ -168,7 +168,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
     'DEFAULT_THROTTLE_CLASSES': ['rest_framework.throttling.ScopedRateThrottle'],
-    'DEFAULT_THROTTLE_RATES': {'credit_check': '5/hour', 'numberdar_action': '30/min', 'otp_verify': '10/hour', 'ai_assistant': '20/hour'}, 
+    'DEFAULT_THROTTLE_RATES': {'credit_check': '5/hour', 'numberdar_action': '30/min', 'otp_verify': '10/hour', 'ai_assistant': '20/hour', 'login': '10/hour',}, 
 }
 
 SIMPLE_JWT = {
@@ -195,6 +195,9 @@ EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')                
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:5173').split(',')
 
 STATIC_URL = 'static/'
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
