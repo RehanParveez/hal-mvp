@@ -7,6 +7,7 @@ from apps.community.models import NumberdarProfile, FarmerVerificationRequest
 from apps.community.serializers import NumberdarProfileSerializer, FarmerVerificationRequestSerializer, VerificationRejectSerializer
 from apps.community.services import NumberdarVerificationService
 from rest_framework.throttling import ScopedRateThrottle
+from shared.pagination import TimelineCursorPagination
 
 class NumberdarProfileViewSet(viewsets.ReadOnlyModelViewSet):
   serializer_class = NumberdarProfileSerializer
@@ -33,6 +34,7 @@ class FarmerVerificationRequestViewSet(viewsets.ModelViewSet):
   http_method_names = ['get', 'post', 'patch', 'head', 'options']
   throttle_scope = 'numberdar_action'
   throttle_classes = [ScopedRateThrottle]
+  pagination_class = TimelineCursorPagination
 
   def get_permissions(self):
     if self.action == 'create':

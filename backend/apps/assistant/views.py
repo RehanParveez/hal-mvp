@@ -7,9 +7,11 @@ from rest_framework.decorators import action
 from apps.assistant.services import AssistantService, SeasonSummaryService
 from rest_framework.response import Response
 from apps.settlements.models import SettlementInvoice
+from shared.pagination import TimelineCursorPagination
 
 class AssistantQueryViewSet(viewsets.ReadOnlyModelViewSet):
   serializer_class = AssistantQuerySerializer
+  pagination_class = TimelineCursorPagination
 
   def get_permissions(self):  
     return [(FarmerPermission | BankManagerPerm | FactoryPerm)()]

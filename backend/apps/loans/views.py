@@ -8,8 +8,10 @@ from apps.loans.services import LoanApplicationService, LoanReadinessService
 from rest_framework.response import Response
 from apps.loans.serializers.basic import LoanApprovalSerializer, LoanRejectionSerializer
 from rest_framework.decorators import action
+from shared.pagination import TimelineCursorPagination
 
 class LoanApplicationViewSet(viewsets.ModelViewSet):
+  pagination_class = TimelineCursorPagination
   
   def get_serializer_class(self):
     if self.action in ['list', 'retrieve']:

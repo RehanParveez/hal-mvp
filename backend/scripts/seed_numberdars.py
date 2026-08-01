@@ -6,10 +6,10 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
-from shared.constants import PUNJAB_DISTRICTS
+from shared.constants import PILOT_DISTRICTS
 from apps.accounts.models import User
 
-SEED_DISTRICTS = PUNJAB_DISTRICTS[:6]
+SEED_DISTRICTS = PILOT_DISTRICTS[:6]
 
 def run():
   for i, district in enumerate(SEED_DISTRICTS, start=1):

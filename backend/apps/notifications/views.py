@@ -5,10 +5,12 @@ from apps.notifications.models import Notification
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
+from shared.pagination import TimelineCursorPagination
 
 class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
   serializer_class = NotificationSerializer
   permission_classes = [IsAuthenticated]
+  pagination_class = TimelineCursorPagination
 
   def get_queryset(self):
     return Notification.objects.filter(recipient=self.request.user).order_by('-created_at')

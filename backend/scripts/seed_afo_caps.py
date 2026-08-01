@@ -7,7 +7,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
 from decimal import Decimal
-from shared.constants import PUNJAB_DISTRICTS
+from shared.constants import PILOT_DISTRICTS
 from apps.crops.models import CropType
 from apps.crops.services import CropInputCapService
 
@@ -15,7 +15,7 @@ BASE_CAPS = {
   'seed': Decimal('4500'), 'fertilizer': Decimal('12000'), 'pesticide': Decimal('6000'),
   'irrigation': Decimal('3500'), 'labour': Decimal('8000'),
 }
-SEED_DISTRICTS = PUNJAB_DISTRICTS[:6]
+SEED_DISTRICTS = PILOT_DISTRICTS[:6]
 
 def run():
   crops = CropType.objects.all()

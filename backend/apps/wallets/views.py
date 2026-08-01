@@ -5,11 +5,13 @@ from rest_framework.permissions import IsAuthenticated
 from apps.wallets.serializers.detail import WalletSerializer, WalletTransactionSerializer
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from shared.pagination import TimelineCursorPagination
 
 class WalletViewSet(viewsets.ReadOnlyModelViewSet):
   queryset = Wallet.objects.select_related('user').all()
   serializer_class = WalletSerializer1
   permission_classes = [IsAuthenticated]
+  pagination_class = TimelineCursorPagination
   
   def get_queryset(self):
     if self.request.user.role == 'admin':
