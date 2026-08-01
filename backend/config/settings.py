@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 from datetime import timedelta
 from dotenv import load_dotenv
+from django.core.exceptions import ImproperlyConfigured 
 
 load_dotenv()
 
@@ -58,6 +59,9 @@ INSTALLED_APPS = [
     'apps.credit',
     'apps.assistant',
     'django_celery_beat',
+    'django_otp',
+    'django_otp.plugins.otp_totp',
+    'two_factor',
 ]
 
 NUMBERDAR_APPROVAL_TIMEOUT_DAYS = int(os.environ.get('NUMBERDAR_APPROVAL_TIMEOUT_DAYS', 7))
@@ -66,6 +70,9 @@ PARTNER_BANK_API_KEY = os.environ.get('PARTNER_BANK_API_KEY', '')
 PARTNER_BANK_PLATFORM_ID = os.environ.get('PARTNER_BANK_PLATFORM_ID', 'HAL_MVP_23')
 USE_MOCK_AI = os.getenv('USE_MOCK_AI', 'false').lower() == 'true'
 
+ADMIN_URL_PATH = os.environ.get('DJANGO_ADMIN_URL', 'admin/') 
+ADMIN_IP_ALLOWLIST = [ip.strip() for ip in os.environ.get('DJANGO_ADMIN_IP_ALLOWLIST', '').split(',') if ip.strip()]
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -73,11 +80,15 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django_otp.middleware.OTPMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'shared.middleware.request_id.RequestIDMiddleware',  
     'shared.middleware.audit_log.AuditLogMiddleware',
+    'shared.middleware.admin_ip_allowlist.AdminIPAllowlistMiddleware',
 ]
+
+LOGIN_URL = 'two_factor:login'
 
 LOGGING = {
   'version': 1,
@@ -186,8 +197,8 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(hours=8),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'REFRESH_TOKEN_LIFETIME': timedelta(hours=24),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'AUTH_HEADER_TYPES': ('Bearer',),
@@ -216,3 +227,30 @@ STATIC_URL = 'static/'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'poc-dev-secret-key-change-in-prod')
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '*').split(',')
+
+if not DEBUG and SECRET_KEY == 'poc-dev-secret-key-change-in-prod': 
+  raise ImproperlyConfigured(
+    "DJANGO_SECRET_KEY must be set to a real, unique secret when DEBUG=False. "
+    "Refusing to start with the development placeholder key.")
+
+if not DEBUG and ALLOWED_HOSTS == ['*']: 
+  raise ImproperlyConfigured(
+    "DJANGO_ALLOWED_HOSTS must list your real domain(s) when DEBUG=False. "
+    "Refusing to start with a wildcard host allowlist.")
+
+if not DEBUG:  
+  SECURE_SSL_REDIRECT = True
+  SECURE_HSTS_SECONDS = 31536000
+  SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+  SECURE_HSTS_PRELOAD = True
+  SECURE_CONTENT_TYPE_NOSNIFF = True
+  
+FIELD_ENCRYPTION_KEY = os.environ.get('FIELD_ENCRYPTION_KEY')  
+CNIC_INDEX_KEY = os.environ.get('CNIC_INDEX_KEY')  
+
+if not DEBUG and (not FIELD_ENCRYPTION_KEY or not CNIC_INDEX_KEY): 
+  raise ImproperlyConfigured("FIELD_ENCRYPTION_KEY and CNIC_INDEX_KEY must both be set when DEBUG=False.")

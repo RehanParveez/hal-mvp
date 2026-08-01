@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from apps.accounts.models import User
 from shared.validators import validate_secp_number, validate_ntn
+from shared.encrypted_fields import compute_cnic_index
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
   password = serializers.CharField(write_only=True, style={'input_type': 'password'})
@@ -14,6 +15,11 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     model = User
     fields = ['id', 'phone', 'cnic', 'full_name', 'password', 'role', 'district', 'province', 'shop_name', 'secp_registration_number', 'ntn_number']
     read_only_fields = ['id']
+    
+  def validate_cnic(self, value):
+    if User.objects.filter(cnic_index=compute_cnic_index(value)).exists():
+      raise serializers.ValidationError("A user with this CNIC already exists.")
+    return value
   
   def validate(self, data):
     if data.get('role') == 'shopkeeper':

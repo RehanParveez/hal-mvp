@@ -2,6 +2,7 @@ from shared.models import BaseModel
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser, PermissionsMixin
 import uuid
 from django.db import models
+from shared.encrypted_fields import EncryptedCharField, compute_cnic_index
 
 class UserManager(BaseUserManager):
   def create_user(self, phone, password, role, **extra):
@@ -36,7 +37,8 @@ class User(AbstractBaseUser, PermissionsMixin):
   )
   id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
   phone = models.CharField(max_length=15, unique=True)
-  cnic = models.CharField(max_length=15, unique=True)
+  cnic = EncryptedCharField()
+  cnic_index = models.CharField(max_length=68, unique=True, db_index=True, editable=False, null=True) 
   full_name = models.CharField(max_length=170)
   role = models.CharField(max_length=30, choices=ROLES, db_index=True)
   district = models.CharField(max_length=110)
@@ -64,6 +66,11 @@ class User(AbstractBaseUser, PermissionsMixin):
   objects = UserManager()
   USERNAME_FIELD = 'phone'
   REQUIRED_FIELDS = ['cnic', 'full_name']
+  
+  def save(self, *args, **kwargs):
+    if self.cnic and self.cnic != '[unable to decrypt]':
+      self.cnic_index = compute_cnic_index(self.cnic)
+    super().save(*args, **kwargs)
 
   class Meta:
     db_table = 'users'
@@ -82,6 +89,18 @@ class CorporateVerificationDocument(BaseModel):
   class Meta:
     db_table = 'corporate_verification_documents'
     unique_together = [['user', 'document_type']]
+    
+class PasswordResetOTP(BaseModel): 
+  user = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name='password_reset_otps')
+  otp_hash = models.CharField(max_length=100)
+  verified = models.BooleanField(default=False)
+  verified_at = models.DateTimeField(null=True, blank=True)
+  used = models.BooleanField(default=False) 
+  expires_at = models.DateTimeField()
+
+  class Meta:
+    db_table = 'password_reset_otps'
+    indexes = [models.Index(fields=['user', 'verified', 'used'])]
 
 class FarmerProfile(BaseModel):
   user = models.OneToOneField(User, on_delete=models.CASCADE, related_name = 'farmer_profile')
