@@ -1,7 +1,6 @@
 from django.contrib.auth import get_user_model
 from rest_framework import viewsets, status, permissions
 from apps.accounts.serializers import UserRegistrationSerializer, UserSerializer
-from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser
@@ -10,10 +9,13 @@ from apps.accounts.serializers import DocumentUploadSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.throttling import ScopedRateThrottle
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from django.conf import settings
 from shared.constants import PUNJAB_DIVISIONS
+from apps.accounts.services import PasswordResetService 
+from apps.accounts.serializers import PasswordResetRequestSerializer, PasswordResetVerifySerializer, PasswordResetCompleteSerializer, CustomTokenObtainPairSerializer
+from apps.accounts.models import PasswordResetOTP
 
 User = get_user_model()
 
@@ -53,9 +55,13 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer = self.get_serializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     user = serializer.save()
-    refresh = RefreshToken.for_user(user)
-    return Response({'access': str(refresh.access_token), 'refresh': str(refresh), 
-      'user': UserSerializer(user).data}, status=status.HTTP_201_CREATED)
+    response = Response({
+      'access': str(refresh.access_token), 
+      'user': UserSerializer(user).data
+    }, status=status.HTTP_201_CREATED)
+  
+    _set_refresh_cookie(response, str(refresh))
+    return response
 
   @action(detail=False, methods=['get', 'patch'])
   def profile(self, request):
@@ -91,13 +97,6 @@ class UserViewSet(viewsets.ModelViewSet):
 class ThrottledTokenObtainPairView(TokenObtainPairView):
   throttle_classes = [ScopedRateThrottle]
   throttle_scope = 'login'
-  
-REFRESH_COOKIE_NAME = 'hal_refresh_token'
-REFRESH_COOKIE_MAX_AGE = 60 * 60 * 24
-
-def _set_refresh_cookie(response, token):
-  response.set_cookie(REFRESH_COOKIE_NAME, token, max_age=REFRESH_COOKIE_MAX_AGE,
-    httponly=True, secure=not settings.DEBUG, samesite='Strict')
 
 class AuthViewSet(viewsets.ViewSet):
   def get_permissions(self):
@@ -117,7 +116,7 @@ class AuthViewSet(viewsets.ViewSet):
 
   @action(detail=False, methods=['post'], url_path='tokenobtainpair')
   def token_obtain_pair(self, request):
-    serializer = TokenObtainPairSerializer(data=request.data)
+    serializer = CustomTokenObtainPairSerializer(data=request.data)
     try:
       serializer.is_valid(raise_exception=True)
     except TokenError as e:
@@ -149,3 +148,42 @@ class AuthViewSet(viewsets.ViewSet):
     response = Response({'message': 'Logged out.'})
     response.delete_cookie(REFRESH_COOKIE_NAME)
     return response
+  
+class PasswordResetViewSet(viewsets.ViewSet):   
+  permission_classes = [AllowAny]
+
+  def get_throttles(self):
+    self.throttle_scope = 'password_reset'
+    return [ScopedRateThrottle()]
+
+  @action(detail=False, methods=['post'], url_path='request')
+  def request_reset(self, request):
+    serializer = PasswordResetRequestSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    reset = PasswordResetService.request_reset(serializer.validated_data['phone'])
+    return Response({'message': 'if this phone number is registered, a reset code has been sent.',
+      'reset_reference': str(reset.id) if reset else None})
+
+  @action(detail=False, methods=['post'], url_path='verify')
+  def verify_otp(self, request):
+    serializer = PasswordResetVerifySerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    try:
+      PasswordResetService.verify_reset_otp(serializer.validated_data['reset_reference'], serializer.validated_data['otp_code'])
+    except PasswordResetOTP.DoesNotExist:
+      return Response({'error': 'Reset request not found.'}, status=status.HTTP_404_NOT_FOUND)
+    except ValueError as e:
+      return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    return Response({'message': 'code is verified. you can now set a new password.'})
+
+  @action(detail=False, methods=['post'], url_path='complete')
+  def complete_reset(self, request):
+    serializer = PasswordResetCompleteSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    try:
+      PasswordResetService.complete_reset(serializer.validated_data['reset_reference'], serializer.validated_data['new_password'])
+    except PasswordResetOTP.DoesNotExist:
+      return Response({'error': 'Reset request not found.'}, status=status.HTTP_404_NOT_FOUND)
+    except ValueError as e:
+      return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    return Response({'message': 'your password has been reset. you can now log in.'})

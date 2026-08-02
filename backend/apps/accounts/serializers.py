@@ -2,6 +2,8 @@ from rest_framework import serializers
 from apps.accounts.models import User
 from shared.validators import validate_secp_number, validate_ntn
 from shared.encrypted_fields import compute_cnic_index
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from django_otp.plugins.otp_totp.models import TOTPDevice
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
   password = serializers.CharField(write_only=True, style={'input_type': 'password'})
@@ -66,3 +68,31 @@ class DocumentUploadSerializer(serializers.Serializer):
     if value.content_type not in ('application/pdf', 'image/jpeg', 'image/png'):
       raise serializers.ValidationError("File must be a PDF, JPEG, or PNG.")
     return value
+  
+class PasswordResetRequestSerializer(serializers.Serializer):   
+  phone = serializers.CharField()
+
+class PasswordResetVerifySerializer(serializers.Serializer):  
+  reset_reference = serializers.UUIDField()
+  otp_code = serializers.CharField(min_length=6, max_length=6)
+
+class PasswordResetCompleteSerializer(serializers.Serializer): 
+  reset_reference = serializers.UUIDField()
+  new_password = serializers.CharField(min_length=8)
+  
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+  otp_token = serializers.CharField(required=False, allow_blank=True, write_only=True)
+
+  def validate(self, attrs):
+    data = super().validate(attrs)
+    user = self.user
+    device = TOTPDevice.objects.filter(user=user, confirmed=True).first()
+
+    if device:
+      otp_token = attrs.get('otp_token')
+      if not otp_token:
+        raise serializers.ValidationError({"otp_token": "this account has 2FA enabled. please provide the authenticator code."})
+      if not device.verify_token(otp_token):
+        raise serializers.ValidationError({"otp_token": "Invalid or expired 2FA code."})
+      
+    return data

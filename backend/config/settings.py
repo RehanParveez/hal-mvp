@@ -60,8 +60,10 @@ INSTALLED_APPS = [
     'apps.assistant',
     'django_celery_beat',
     'django_otp',
+    'django_otp.plugins.otp_static',
     'django_otp.plugins.otp_totp',
     'two_factor',
+    'drf_spectacular', 
 ]
 
 NUMBERDAR_APPROVAL_TIMEOUT_DAYS = int(os.environ.get('NUMBERDAR_APPROVAL_TIMEOUT_DAYS', 7))
@@ -193,7 +195,14 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'shared.pagination.StandardResultsPagination',
     'PAGE_SIZE': 20,
     'DEFAULT_THROTTLE_CLASSES': ['rest_framework.throttling.ScopedRateThrottle'],
-    'DEFAULT_THROTTLE_RATES': {'credit_check': '5/hour', 'numberdar_action': '30/min', 'otp_verify': '10/hour', 'ai_assistant': '20/hour', 'login': '10/hour',}, 
+    'DEFAULT_THROTTLE_RATES': {'credit_check': '5/hour', 'numberdar_action': '30/min', 'otp_verify': '10/hour', 'ai_assistant': '20/hour', 'login': '10/hour', 'password_reset': '5/hour',}, 
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Hal API',
+    'DESCRIPTION': "Digital escrow platform connecting farmers, banks, shopkeepers, and factory buyers.",
+    'VERSION': '1.0.0',
 }
 
 SIMPLE_JWT = {

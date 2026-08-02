@@ -116,4 +116,14 @@ EVENT_TEMPLATES = {
     'en': {'subject': 'Credit Check Needs Manual Review',
            'message': 'Hi {full_name}, a credit check for {farmer_name} could not be completed automatically and needs manual review.'},
   },
+  
+  'password_reset_otp_sent': {
+  'en': {'subject': 'Your Password Reset Code', 'message': 'Hi {full_name}, your password reset code is {otp_code}. It expires in 10 minutes.'},
+  'ur': {'subject': 'آپ کے پاس ورڈ ری سیٹ کا کوڈ', 'message': '{full_name}، آپ کا پاس ورڈ ری سیٹ کوڈ {otp_code} ہے۔ یہ 10 منٹ میں ختم ہو جائے گا۔'},
+},
+  
+'password_changed_confirmation': {
+  'en': {'subject': 'Your Password Was Changed', 'message': 'Hi {full_name}, your password was just changed. If this wasn\'t you, contact support immediately.'},
+  'ur': {'subject': 'آپ کا پاس ورڈ تبدیل ہو گیا', 'message': '{full_name}، آپ کا پاس ورڈ ابھی تبدیل ہوا ہے۔ اگر یہ آپ نہیں تھے تو فوری طور پر سپورٹ سے رابطہ کریں۔'},
+ },
 }

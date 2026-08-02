@@ -24,6 +24,8 @@ class Notification(BaseModel):
     ('credit_check_manual_review', 'Credit Check Manual Review'),
     ('batch_received', 'Batch Received'),      
     ('delivery_confirmed', 'Delivery Confirmed'),
+    ('password_reset_otp_sent', 'Password Reset OTP Sent'),
+    ('password_changed_confirmation', 'Password Changed Confirmation'),
   )
   
   CHANNEL_CHOICES = (
