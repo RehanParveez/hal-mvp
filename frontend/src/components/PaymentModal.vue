@@ -35,12 +35,12 @@
 
 <script setup>
 import AFOLimitDisplay from '@/components/farmer/AFOLimitDisplay.vue'
-import { reactive, computed, ref, onMounted } from 'vue'
+import { reactive, computed, ref, onMounted, onUnmounted } from 'vue'
 import { useInputsStore } from '@/stores/inputs.js'
 import { useEscrowStore } from '@/stores/escrow.js'
 import { useNotificationsStore } from '@/stores/notifications.js'
 import { listShopkeepers } from '@/api/accounts.js'
-import { useI18n } from 'vue-i18n'
+import { useI18n } from 'vue-i18n' 
 
 const { t } = useI18n()
 const props = defineProps(['escrowId'])
@@ -93,4 +93,11 @@ const submit = async () => {
   form.shopkeeper_id = ''
   emit('success')
 }
+
+function handleKeydown(e) {
+  if (e.key === 'Escape') emit('close')
+}
+onMounted(() => document.addEventListener('keydown', handleKeydown)) 
+onUnmounted(() => document.removeEventListener('keydown', handleKeydown))
+
 </script>

@@ -3,7 +3,7 @@ import * as communityApi from '@/api/community.js'
 import { useNotificationsStore } from './notifications.js'
 
 export const useCommunityStore = defineStore('community', {
-  state: () => ({ numberdars: [], myRequests: [], queue: [], isLoading: false }),
+  state: () => ({ numberdars: [], myRequests: [], queue: [], queueNextUrl: null, isLoading: false }),
   getters: {
     myLatestRequest: (state) => state.myRequests[0] ?? null,
     isVerificationPending: (state) => state.myRequests[0]?.status === 'pending',
@@ -36,13 +36,24 @@ export const useCommunityStore = defineStore('community', {
         throw err
       }
     },
+
     async fetchQueue(statusFilter) {
       this.isLoading = true
       try {
         const res = await communityApi.listVerificationQueue(statusFilter ? { status: statusFilter } : {})
         this.queue = res.data.results ?? res.data
+        this.queueNextUrl = res.data.next ?? null
       } finally { this.isLoading = false }
     },
+
+    async fetchMoreQueue() { 
+      if (!this.queueNextUrl) return
+      const res = await fetchNextPage(this.queueNextUrl)
+      this.queue = [...this.queue, ...(res.data.results ?? [])]
+      this.queueNextUrl = res.data.next ?? null
+    },
+
+
     async approve(id) {
       const notify = useNotificationsStore()
       const res = await communityApi.approveVerification(id)

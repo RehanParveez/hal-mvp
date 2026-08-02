@@ -12,7 +12,10 @@
     "submitting": "جمع ہو رہا ہے...",
     "pleaseWait": "براہ کرم انتظار کریں...",
     "hide": "چھپائیں",
-    "view": "دیکھیں"
+    "view": "دیکھیں",
+    "selectDistrict": "ضلع منتخب کریں", "pilotProvinceNote": "فی الحال پنجاب میں پائلٹ کیا جا رہا ہے",
+    "districtLoadError": "ضلع کی فہرست لوڈ نہیں ہو سکی۔",
+    "retry": "دوبارہ کوشش کریں"
   },
 
   "nav": {
@@ -67,7 +70,11 @@
     "roleInsurance": "انشورنس ایجنٹ",
     "roleAfo": "اے ایف او افسر",
     "showPassword": "پاس ورڈ دکھائیں",
-    "hidePassword": "پاس ورڈ چھپائیں"
+    "hidePassword": "پاس ورڈ چھپائیں",
+    "resetPasswordTitle": "پاس ورڈ ری سیٹ کریں", "sendResetCode": "ری سیٹ کوڈ بھیجیں",
+    "enterResetCode": "اپنے فون پر بھیجا گیا 6 ہندسوں کا کوڈ درج کریں۔", "newPassword": "نیا پاس ورڈ",
+    "setNewPassword": "نیا پاس ورڈ محفوظ کریں", "resetSuccess": "آپ کا پاس ورڈ کامیابی سے ری سیٹ ہو گیا ہے۔",
+    "backToLogin": "لاگ ان پر واپس جائیں", "forgotPassword": "پاس ورڈ بھول گئے؟"
   },
 
   "footer": {

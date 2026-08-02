@@ -104,30 +104,7 @@
                 <ChevronDown :size="16" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               </div>
 
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div class="relative">
-                  <MapPin :size="16" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input v-model="form.district" type="text" id="reg-district" required placeholder=" "
-                    class="peer w-full border border-gray-300 rounded-lg pl-10 pr-3 pt-5 pb-2 text-sm
-                      focus:outline-none focus:ring-2 focus:ring-green-700/20 focus:border-green-700 transition" />
-                  <label for="reg-district" class="absolute left-10 text-gray-500 pointer-events-none transition-all duration-150
-                    top-1 text-xs peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400
-                    peer-focus:top-1 peer-focus:text-xs peer-focus:text-green-700">
-                    {{ $t('common.district') }}
-                  </label>
-                </div>
-                <div class="relative">
-                  <MapPin :size="16" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input v-model="form.province" type="text" id="reg-province" placeholder=" "
-                    class="peer w-full border border-gray-300 rounded-lg pl-10 pr-3 pt-5 pb-2 text-sm
-                      focus:outline-none focus:ring-2 focus:ring-green-700/20 focus:border-green-700 transition" />
-                  <label for="reg-province" class="absolute left-10 text-gray-500 pointer-events-none transition-all duration-150
-                    top-1 text-xs peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400
-                    peer-focus:top-1 peer-focus:text-xs peer-focus:text-green-700">
-                    {{ $t('common.province') }}
-                  </label>
-                </div>
-              </div>
+              <DistrictSelect v-model="form.district" />
 
               <button type="submit" :disabled="isSubmitting" class="btn-primary w-full flex items-center justify-center gap-2 group mt-2">
                 <span>{{ isSubmitting ? $t('common.pleaseWait') : (isLandownerRole || !form.role ? $t('auth.register') : $t('common.continue')) }}</span>
@@ -258,7 +235,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed, watch } from 'vue'
+import { reactive, ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.js'
 import { useCommunityStore } from '@/stores/community.js'
@@ -268,6 +245,14 @@ import DocumentUpload from '@/components/shared/DocumentUpload.vue'
 import LanguageSwitcher from '@/components/shared/LanguageSwitcher.vue'
 import AuthHeroPanel from '@/components/auth/AuthHeroPanel.vue'
 import { Wheat, User, Phone, IdCard, Lock, Eye, EyeOff, Briefcase, ChevronDown, MapPin, Users, ShieldCheck, Store, Hash, ArrowRight } from 'lucide-vue-next'
+import { uploadVerificationDocument } from '@/api/auth.js'
+import { useReferenceStore } from '@/stores/reference.js'   
+import DistrictSelect from '@/components/shared/DistrictSelect.vue' 
+
+const reference = useReferenceStore() 
+onMounted(() => {
+  reference.fetchIfNeeded().then(() => { form.province = reference.province })
+})
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -416,8 +401,18 @@ const secpDocument = ref(null)
 const incorporationDocument = ref(null)
 const documentsReady = computed(() => !!secpDocument.value && !!incorporationDocument.value)
 
-function handleFinishCorporateRegistration() {
-  router.push(ROLE_HOME[form.role] || '/login')
+async function handleFinishCorporateRegistration() {
+  isSubmitting.value = true
+  errorMessage.value = ''
+  try {
+    if (secpDocument.value) await uploadVerificationDocument('secp_certificate', secpDocument.value)
+    if (incorporationDocument.value) await uploadVerificationDocument('incorporation_certificate', incorporationDocument.value)
+    router.push(ROLE_HOME[form.role] || '/login')
+  } catch (err) {
+    errorMessage.value = 'Failed to upload documents. Please try again.'
+  } finally {
+    isSubmitting.value = false
+  }
 }
 
 const shakeClass = ref('')

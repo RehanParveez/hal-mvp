@@ -6,6 +6,9 @@
     <TransitionGroup v-else name="list-item" tag="div" class="space-y-3">
       <PendingFarmerCard v-for="req in community.queue" :key="req.id" :request="req" @approve="handleApprove" @reject="handleReject" />
     </TransitionGroup>
+    <button v-if="community.queueNextUrl" @click="community.fetchMoreQueue()" class="btn-secondary w-full mt-3">
+      {{ $t('common.loadMore') }}
+    </button>
       <p v-if="community.queue.length === 0" class="text-gray-500">{{ $t('numberdar.noRequests') }}</p>
     </div>
 </template>

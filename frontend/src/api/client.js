@@ -1,9 +1,11 @@
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth.js'
 import { useNotificationsStore } from '@/stores/notifications.js'
+import router from '@/router/index.js'
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
+  withCredentials: true,
 })
 
 apiClient.interceptors.request.use((config) => {
@@ -52,6 +54,8 @@ apiClient.interceptors.response.use(
         refreshQueue.forEach((p) => p.reject(refreshError))
         refreshQueue = []
         auth.logout()
+        notify.showWarning({ title: 'Session Expired', message: 'Please log in again to continue.' })
+        router.push('/login')
         return Promise.reject(refreshError)
       } finally {
         isRefreshing = false
@@ -69,5 +73,11 @@ apiClient.interceptors.response.use(
     return Promise.reject(error)
   }
 )
+
+export function fetchNextPage(nextUrl) { 
+  if (!nextUrl) return Promise.resolve({ data: { results: [], next: null } })
+  const relativePath = nextUrl.replace(apiClient.defaults.baseURL, '')
+  return apiClient.get(relativePath)
+}
 
 export default apiClient

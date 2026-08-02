@@ -45,6 +45,8 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
       - EMAIL_HOST_USER=${EMAIL_HOST_USER}      
       - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD}
+      - FIELD_ENCRYPTION_KEY=5jLb-XRvtNCjD2b5T7KrGoVWX7z4TJXoTpC7ZcQujPg=
+      - CNIC_INDEX_KEY=c8a8c5fdae97be36db9d7c4819a294f010785372f0f9240c2e1ccc3cafcaef4f
     depends_on:
       db:
         condition: service_healthy

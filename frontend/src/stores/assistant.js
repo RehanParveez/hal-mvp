@@ -19,7 +19,9 @@ export const useAssistantStore = defineStore('assistant', {
       try {
         const res = await assistantApi.askAssistant(question)
         this.messages.push({ role: 'assistant', text: res.data.answer, status: res.data.status })
-      } finally {
+      } catch (err) {
+       this.messages.push({ role: 'assistant', text: 'Sorry, something went wrong. Please try again.' })
+    } finally {
         this.isAsking = false
       }
     },

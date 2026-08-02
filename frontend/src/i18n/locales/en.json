@@ -14,7 +14,8 @@
     "hide": "Hide",
     "view": "View",
     "showPassword": "Show password",
-    "hidePassword": "Hide password"
+    "hidePassword": "Hide password",
+    "selectDistrict": "Select District", "pilotProvinceNote": "Currently piloting in Punjab"
   },
 
   "nav": {
@@ -67,8 +68,13 @@
     "roleBank": "Bank Manager",
     "roleFactory": "Factory Buyer",
     "roleInsurance": "Insurance Agent",
-    "roleAfo": "AFO Officer"
+    "roleAfo": "AFO Officer",
+    "resetPasswordTitle": "Reset Password", "sendResetCode": "Send Reset Code",
+    "enterResetCode": "Enter the 6-digit code sent to your phone.", "newPassword": "New Password",
+    "setNewPassword": "Set New Password", "resetSuccess": "Your password has been reset successfully.",
+    "backToLogin": "Back to Login", "forgotPassword": "Forgot password?"
   },
+  
   "footer": {
     "tagline": "Digital escrow connecting farmers, banks, shopkeepers, and factory buyers on one transparent platform.",
     "quickLinks": "Quick Links", "support": "Support", "builtFor": "Built for Pakistan's farmers"

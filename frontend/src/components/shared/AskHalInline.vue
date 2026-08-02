@@ -50,6 +50,8 @@ async function handleAsk() {
     if (props.batchId) extra.batch_id = props.batchId
     const res = await askAssistant(question, extra)
     messages.value.push({ role: 'assistant', text: res.data.answer })
+  } catch (err) {
+    messages.value.push({ role: 'assistant', text: 'Something went wrong. Please try again.' })
   } finally {
     isAsking.value = false
   }

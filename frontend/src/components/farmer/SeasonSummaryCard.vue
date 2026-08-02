@@ -17,6 +17,7 @@
 import { ref } from 'vue'
 import { Sparkles } from 'lucide-vue-next'
 import { getSeasonSummary } from '@/api/assistant.js'
+import { useNotificationsStore } from '@/stores/notifications.js'
 
 const props = defineProps({ invoiceId: { type: String, required: true } })
 const summary = ref(null)
@@ -27,6 +28,8 @@ async function handleGenerate() {
   try {
     const res = await getSeasonSummary(props.invoiceId)
     summary.value = res.data
+  } catch (err) {
+    useNotificationsStore().showError({ message: 'Failed to generate your season summary. Please try again.' })
   } finally {
     isLoading.value = false
   }

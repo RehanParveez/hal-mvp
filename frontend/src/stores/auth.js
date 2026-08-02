@@ -5,10 +5,10 @@ export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null,
     accessToken: null,
-    refreshToken: null,
     isLoading: false,
     loginError: null,
     registerError: null,
+    sessionChecked: false,
   }),
   getters: {
     isLoggedIn: (state) => !!state.accessToken,
@@ -36,16 +36,13 @@ export const useAuthStore = defineStore('auth', {
       try {
         const tokenRes = await authApi.login(phone, password)
         this.accessToken = tokenRes.data.access
-        this.refreshToken = tokenRes.data.refresh
-        sessionStorage.setItem('accessToken', this.accessToken)
-        localStorage.setItem('refreshToken', this.refreshToken)
-
         const profileRes = await authApi.fetchProfile()
         this.user = profileRes.data
+        this.sessionChecked = true
 
         return this.user
       } catch (err) {
-        this.loginError = err.response?.data?.message || err.response?.data?.detail || 'The Login failed. Kindly check your phone and password.'
+        this.registerError = err.response?.data?.message || err.response?.data?.detail || 'The Login failed. Kindly check your phone and password.'
         throw err
       } finally {
         this.isLoading = false
@@ -73,17 +70,10 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async refreshAccessToken() {
-      const storedRefresh = this.refreshToken || localStorage.getItem('refreshToken')
-      if (!storedRefresh) throw new Error('No refresh token available')
-      const res = await authApi.refreshToken(storedRefresh)
-      this.accessToken = res.data.access
-      sessionStorage.setItem('accessToken', this.accessToken)
-      if (res.data.refresh) {
-        this.refreshToken = res.data.refresh
-        localStorage.setItem('refreshToken', this.refreshToken)
-      }
-      return this.accessToken
-    },
+    const res = await authApi.refreshToken() 
+    this.accessToken = res.data.access
+    return this.accessToken
+  },
 
     async updateProfile(payload) {
      const res = await authApi.updateProfile(payload)
@@ -96,42 +86,23 @@ export const useAuthStore = defineStore('auth', {
    },
 
     async restoreSession() {
-      const accessToken = sessionStorage.getItem('accessToken')
-      const refreshToken = localStorage.getItem('refreshToken')
-      if (!refreshToken) return
-
-      this.refreshToken = refreshToken
-      if (accessToken) {
-        this.accessToken = accessToken
-      } else {
-        try {
-          await this.refreshAccessToken()
-        } catch {
-          this.logout()
-          return
-        }
-      }
-
-      try {
-        const profileRes = await authApi.fetchProfile()
-        this.user = profileRes.data
-      } catch {
-        try {
-          await this.refreshAccessToken()
-          const profileRes = await authApi.fetchProfile()
-          this.user = profileRes.data
-        } catch {
-        this.logout()
-      }
-    }
-  },
-
-    logout() {
+    try {
+      await this.refreshAccessToken()
+      const profileRes = await authApi.fetchProfile()
+      this.user = profileRes.data
+    } catch {
       this.user = null
       this.accessToken = null
-      this.refreshToken = null
-      sessionStorage.removeItem('accessToken')
-      localStorage.removeItem('refreshToken')
+    } finally {
+        this.sessionChecked = true 
+      }
     },
+
+    async logout() { 
+    try { await authApi.logout() } catch {}
+    this.user = null
+    this.accessToken = null
+    this.sessionChecked = true
   },
+},
 })

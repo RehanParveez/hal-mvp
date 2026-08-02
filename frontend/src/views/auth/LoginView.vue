@@ -56,6 +56,10 @@
             <ArrowRight v-if="!auth.isLoading" :size="16" class="transition-transform group-hover:translate-x-0.5" />
           </button>
 
+          <router-link to="/forgot-password" class="block text-center text-sm text-gray-500 hover:text-green-700 transition">
+            {{ $t('auth.forgotPassword') }}
+          </router-link>
+
           <p class="text-center text-sm text-gray-500">
             {{ $t('auth.noAccountYet') }}
             <router-link to="/register" class="text-green-700 font-medium hover:text-green-800 hover:underline transition">

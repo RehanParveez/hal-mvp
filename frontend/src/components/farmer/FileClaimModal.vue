@@ -40,7 +40,7 @@
 </template>
 
 <script setup>
-import { reactive, onMounted } from 'vue'
+import { reactive, onMounted, onUnmounted } from 'vue'
 import { useInsuranceStore } from '@/stores/insurance.js'
 import { useNotificationsStore } from '@/stores/notifications.js'
 
@@ -76,4 +76,10 @@ const handleSubmit = async () => {
     notify.showError(error.response?.data?.message ?? 'Failed to submit claim. Please try again.')
   }
 }
+
+function handleKeydown(e) {  
+  if (e.key === 'Escape') emit('close')
+}
+onMounted(() => document.addEventListener('keydown', handleKeydown)) 
+onUnmounted(() => document.removeEventListener('keydown', handleKeydown))
 </script>

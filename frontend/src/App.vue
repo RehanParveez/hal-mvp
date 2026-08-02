@@ -1,6 +1,6 @@
 <template>
   <NotificationBanner />
-  <AppShell v-if="!PUBLIC_ROUTES.includes(route.path)">
+  <AppShell v-if="!isPublicRoute">
     <router-view v-slot="{ Component }">
       <transition name="fade" mode="out-in">
         <component :is="Component" />
@@ -11,12 +11,14 @@
 </template>
 
 <script setup>
+import { computed } from 'vue' 
 import { useRoute } from 'vue-router'
 import AppShell from '@/components/layout/AppShell.vue'
 import NotificationBanner from '@/components/shared/NotificationBanner.vue'
 
-const PUBLIC_ROUTES = ['/login', '/register']
+// const PUBLIC_ROUTES = ['/login', '/register', '/forgot-password']
 const route = useRoute()
+const isPublicRoute = computed(() => route.meta.public === true)
 </script>
 
 <style>
